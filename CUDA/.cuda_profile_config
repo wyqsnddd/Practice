@@ -1,0 +1,4 @@
+local_load
+local_store
+branch
+gld_request

@@ -1,0 +1,5 @@
+I'm following these tutorials: 
+
+http://en.highscore.de/cpp/boost/asio.html
+
+http://www.boost.org/doc/libs/1_40_0/doc/html/boost_asio/tutorial.html

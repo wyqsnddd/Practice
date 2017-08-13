@@ -134,6 +134,19 @@ void print_out_by_cost(const path_set & inputSet){
 void print_out_composite_key(const path_set & inputSet){
   // get a view to index 1 name
   const path_set::index<tag_composite>::type & composite_index = inputSet.get<tag_composite>();
+  std::cout<<"The best infeasible path is:";
+  
+  path_set::index<tag_composite>::type::iterator it_composite_index = composite_index.begin();
+  std::cout<<*it_composite_index;
+
+  const path_set::nth_index<5>::type& test_feasibility_index=inputSet.get<5>();
+  int amount_infeasibility = test_feasibility_index.count(false);
+  std::cout<<"The amount of infeasible path is:"<<amount_infeasibility<<std::endl;
+  
+  std::advance(it_composite_index, amount_infeasibility);
+  std::cout<<"The best feasible path is:";
+  std::cout<<*(it_composite_index);
+  std::cout<<std::endl;
   std::copy(
 	    composite_index.begin(),composite_index.end(),
 	    std::ostream_iterator<boost::shared_ptr<mockPath>>(std::cout));
@@ -160,12 +173,16 @@ void delete_object(int id, path_set & input_container){
 
 
 int main(){
-
+  
+  
   // (0) Basic insertion 
   path_set sample_container;
   boost::shared_ptr<mockPath>  newptr;
   newptr.reset(new mockPath(21, 1, 2, true, "hello_world"));
-  sample_container.insert(newptr);
+  // 'insert' returns: std::pair< iterator, bool >
+  if(sample_container.insert(newptr).second)
+    std::cout<<"Successfully inserted"<<std::endl;
+  
   newptr.reset(new mockPath(20, 1, 2, false, "hello_world"));
   sample_container.insert(newptr);
   newptr.reset(new mockPath(2123, 2, 3, true, "bei_world"));
@@ -179,6 +196,11 @@ int main(){
   newptr.reset(new mockPath(1117, 1, 2, true,  "how_are_you") );
   sample_container.insert(newptr);
  
+  // loop over
+  path_set::iterator it_container = sample_container.begin();
+  for(int ii = 0; ii<sample_container.size(); ii++)
+    std::cout<<"The "<<ii<<" path is: "<<*it_container++<<std::endl;
+  
 
   // (1) iterator 
   std::cout<<"The container size is: "<<sample_container.size()<<std::endl;

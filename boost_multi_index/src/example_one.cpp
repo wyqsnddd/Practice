@@ -56,6 +56,9 @@ struct mockPath
 };
 
 
+
+
+
 // A functor that is used to modify the attribute: 'id'
 struct change_id{
 
@@ -69,6 +72,7 @@ private:
   int id_;
 };
 
+// A functor that is used to modify the attribute: 'cost'
 
 struct change_cost{
 
@@ -86,6 +90,7 @@ private:
 
 // Provide us a way to access index with a name
 struct tag_name {};
+struct tag_random {};
 struct tag_id {};
 struct tag_cost {};
 struct tag_as_inserted {};
@@ -111,7 +116,9 @@ typedef boost::multi_index::multi_index_container<
       boost::multi_index::tag<tag_as_inserted>
       >,
     // (4) access to an element with position
-    boost::multi_index::random_access<>,
+    boost::multi_index::random_access<
+      boost::multi_index::tag<tag_random>
+      >,
     // (5) count on the bool: feasibility so we use hash_non_unique instead of hash_unique
     // If we count on words, we use orderd_non_unique<>.
     boost::multi_index::hashed_non_unique<
@@ -198,9 +205,9 @@ int main(){
   if(sample_container.insert(newptr).second)
     std::cout<<"Successfully inserted"<<std::endl;
   
-  newptr.reset(new mockPath(20, 1, 2, false, "hello_world"));
+  newptr.reset(new mockPath(20, 1, 2, false, "hello_world_first"));
   sample_container.insert(newptr);
-  newptr.reset(new mockPath(2123, 2, 3, true, "bei_world"));
+  newptr.reset(new mockPath(2123, 2, 3, true, "bei_world_nice"));
   sample_container.insert(newptr);
   newptr.reset(new mockPath(234, 4, 4, false, "bei_world") );
   sample_container.insert(newptr);
@@ -242,8 +249,9 @@ int main(){
   
 
   // (2) ordered by name
-  const path_set::index<tag_name>::type & name_index = sample_container.get<tag_name>();
-  if(name_index.find("test")==name_index.end())
+   const path_set::index<tag_name>::type & name_index = sample_container.get<tag_name>();
+     
+   if(name_index.find("test")==name_index.end())
     std::cout<<"Did not find name: test "<<std::endl;
   else
     std::cout<<"Found name: test "<<std::endl;
@@ -280,7 +288,7 @@ int main(){
   std::cout<<"The amount of  id '881' is:  "<<id_index.count(881) <<std::endl;
 
   // (5.2) deletion:
-  newptr.reset(new mockPath(64, 2, 4, false, "bei_world") );
+  newptr.reset(new mockPath(64, 2, 4, false, "bei_world_test") );
   std::cout<<"Before insertion the container size is: "<<sample_container.size()<<std::endl;
   sample_container.insert(newptr);
   std::cout<<"Inserted path with id: 64"<<std::endl;
@@ -303,16 +311,29 @@ int main(){
     std::cout << rand_index[i]->name_ << '\n';
   
   std::cout<<"The container size is: "<<sample_container.size()<<std::endl;
-  std::cout << rand_index[0]->name_ << '\n';
-  std::cout << rand_index[1]->name_ << '\n';
-  std::cout << rand_index[2]->name_ << '\n';
-  // sample_container.erase(rand_index[2]);
-  std::cout << rand_index[3]->name_ << '\n';
-  // std::cout << rand_index[4]->name_ << '\n';
+  // std::cout << rand_index[0]->name_ << '\n';
+  // std::cout << rand_index[1]->name_ << '\n';
+  // std::cout << rand_index[2]->name_ << '\n';
+  // // sample_container.erase(rand_index[2]);
+  // std::cout << rand_index[3]->name_ << '\n';
+  // // std::cout << rand_index[4]->name_ << '\n';
+  std::cout<<"Print out by random access index: "<<std::endl;
 
   for (int i = 0; i < rand_index.size(); i++)
-    std::cout << rand_index[i]->name_ << '\n';
+    std::cout << rand_index[i]->id_ << '\n';
 
+  // path_set::nth_index<0>::type & test_cost_index = sample_container.get<0>();
+  // path_set::nth_index<0>::type::iterator
+  //   test_cost_it = test_cost_index.find(*newptr);
+  test_cost_index.modify(test_cost_it, change_cost(100) );
+  std::cout<<"after change one path: "<<std::endl;
+
+  std::cout<<"Print out by random access index: "<<std::endl;
+
+  for (int i = 0; i < rand_index.size(); i++)
+    std::cout << rand_index[i]->id_ << '\n';
+
+  
   std::cout<<"The container size is: "<<sample_container.size()<<std::endl;
   
   // (8) Count on the feasible path
@@ -324,5 +345,37 @@ int main(){
   // (9) print out by the composite key
   std::cout<<std::endl<<" Container sorted by the composite key (1) feasibility (2) cost"<<std::endl;
   print_out_composite_key(sample_container);  
+
+  // (10)
+  
+  
+
+
+  //(10.1) From boost::shared_ptr<mockPath> to a container iterator
+  path_set::iterator it11 = sample_container.iterator_to( newptr );
+  std::cout<<"We start from: "<<newptr->name_<<" with a cost: "<<newptr->cost_<<" with an ID: "<<newptr->id_<<std::endl;
+  //
+  std::cout<<"We found: "<<std::endl;
+  std::cout<<(*it11)->name_<<std::endl;
+
+  // path_set::const_iterator it11 = sample_container.iterator_to( *t11 );
+  // (10.2) convert it to  name index
+   path_set::index<tag_name>::type::iterator test_name_it = name_index.find((*it11)->name_);
+  
+  // convert to index tagged with `tag_cost` tag
+  path_set::index_const_iterator<tag_cost>::type it2 = sample_container.project<tag_cost>( test_name_it  );
+   test_cost_index.modify(it2, change_cost(-1) );
+  // test_cost_it = sample_container.project<tag_cost>().iterator_to( *it11  );
+  // test_cost_index.modify(test_cost_it, change_cost(-1) );
+  
+   std::cout<<"We change it to: "<<newptr->name_<<" with a cost: "<<newptr->cost_<<" with an ID: "<<newptr->id_<<std::endl;
+
+
+   path_set::index_const_iterator<tag_id>::type it3 = sample_container.project<tag_id>( test_name_it  );
+   id_index.modify(it3, change_id(9527) );
+  //  path_set::index_const_iterator<tag_name>::type it22 = sample_container.get<tag_name>().iterator_to( *test_name_it  );
+
+   std::cout<<"We change it to: "<<newptr->name_<<" with a cost: "<<newptr->cost_<<" with an ID: "<<newptr->id_<<std::endl;
   
 }
+

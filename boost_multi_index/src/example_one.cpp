@@ -70,9 +70,24 @@ private:
 };
 
 
+struct change_cost{
+
+  change_cost(int cost) : cost_(cost) {}    
+  void operator()(boost::shared_ptr<mockPath> p)
+  {
+    p->cost_ = cost_;
+  }
+
+private:
+  int cost_;
+};
+
+
+
 // Provide us a way to access index with a name
 struct tag_name {};
 struct tag_id {};
+struct tag_cost {};
 struct tag_as_inserted {};
 struct tag_composite {};
 
@@ -81,7 +96,7 @@ typedef boost::multi_index::multi_index_container<
   boost::multi_index::indexed_by<
     // (0) sorted by operator on non-unique cost(we use non_unique cost)
     boost::multi_index::ordered_non_unique<
-      boost::multi_index::identity<mockPath>      
+      boost::multi_index::tag<tag_cost>, boost::multi_index::identity<mockPath>      
       >,
     // (1) sorted by less<string> on non-unique name
     boost::multi_index::ordered_non_unique<
@@ -178,7 +193,7 @@ int main(){
   // (0) Basic insertion 
   path_set sample_container;
   boost::shared_ptr<mockPath>  newptr;
-  newptr.reset(new mockPath(21, 1, 2, true, "hello_world"));
+  newptr.reset(new mockPath(21, 18, 2, true, "hello_world"));
   // 'insert' returns: std::pair< iterator, bool >
   if(sample_container.insert(newptr).second)
     std::cout<<"Successfully inserted"<<std::endl;
@@ -187,11 +202,11 @@ int main(){
   sample_container.insert(newptr);
   newptr.reset(new mockPath(2123, 2, 3, true, "bei_world"));
   sample_container.insert(newptr);
-  newptr.reset(new mockPath(234, 2, 4, false, "bei_world") );
+  newptr.reset(new mockPath(234, 4, 4, false, "bei_world") );
   sample_container.insert(newptr);
-  newptr.reset(new mockPath(1243, 1, 2, true,  "bei_Mu") );
+  newptr.reset(new mockPath(1243, 9, 2, true,  "bei_Mu") );
   sample_container.insert(newptr);
-  newptr.reset(new mockPath(8987, 1, 2, false, "how_are_you") );
+  newptr.reset(new mockPath(8987, 10, 2, false, "how_are_you") );
   sample_container.insert(newptr);
   newptr.reset(new mockPath(1117, 1, 2, true,  "how_are_you") );
   sample_container.insert(newptr);
@@ -208,9 +223,18 @@ int main(){
   print_out_by_name(sample_container);
   std::cout<<"Print out by cost: "<<std::endl;
   print_out_by_cost(sample_container);
+  // newptr->cost_ = -1;
+  
+  
+  path_set::nth_index<0>::type & test_cost_index = sample_container.get<0>();
+  path_set::nth_index<0>::type::iterator test_cost_it = test_cost_index.find(*newptr);
+  test_cost_index.modify(test_cost_it, change_cost(-1) );
 
-  const path_set::nth_index<0>::type & test_cost_index = sample_container.get<0>();
+  std::cout<<"Changed cost: "<<std::endl;
+  std::cout<<"Print out by cost: "<<std::endl;
+  print_out_by_cost(sample_container);
 
+  
   /// Note that this 'count' operation has logarithmic complexity
   std::cout<<"Number of path with a cost equals to 2 is: "<<test_cost_index.count( mockPath(1117, 1, 2, false, "how_are_you") ) <<std::endl;
   

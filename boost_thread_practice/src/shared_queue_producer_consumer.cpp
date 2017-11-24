@@ -82,7 +82,7 @@ public:
       m_queue->m_enqueue(str);
       std::cout<<str<<std::endl;
 
-      // sleep one second 
+      // sleep one second and sleep() is one of the predefined interruption points	    
       boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
   }
